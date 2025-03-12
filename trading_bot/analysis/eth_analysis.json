@@ -1,0 +1,15 @@
+{
+    "symbol": "TRY/USDT",
+    "timestamp": "2025-03-03 05:14:59",
+    "recommendations": {},
+    "final_recommendation": {
+        "action": "BUY",
+        "confidence": 0,
+        "action_scores": {
+            "BUY": 0,
+            "SELL": 0,
+            "HOLD": 0,
+            "NEUTRAL": 0
+        }
+    }
+}
