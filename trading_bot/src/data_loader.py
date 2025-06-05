@@ -9,11 +9,12 @@ from tradingview_ta import TA_Handler, Interval
 import time
 import os
 import json
+from pathlib import Path
 
 class DataLoader:
-    def __init__(self, cache_dir='data/cache'):
-        self.cache_dir = cache_dir
-        os.makedirs(cache_dir, exist_ok=True)
+    def __init__(self, cache_dir="data/cache"):
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
         
         # Initialize exchange connections
         self.binance = ccxt.binance()
@@ -279,4 +280,67 @@ class DataLoader:
             features.append(sequence.values)
             targets.append(target)
         
-        return np.array(features), np.array(targets) 
+        return np.array(features), np.array(targets)
+    
+    def load_from_cache(self, symbol, start_date=None, end_date=None):
+        """Cache'den veri yükle"""
+        try:
+            # Dosya ara
+            clean_symbol = symbol.replace('/', '_')
+            cache_files = list(self.cache_dir.glob(f"{clean_symbol}_*.csv"))
+            
+            if not cache_files:
+                print(f"⚠️ {symbol} için cache dosyası bulunamadı")
+                return None
+            
+            # En son dosyayı al
+            latest_file = max(cache_files, key=lambda x: x.stat().st_mtime)
+            
+            print(f"📂 Cache'den yükleniyor: {latest_file.name}")
+            
+            # Veriyi oku
+            df = pd.read_csv(latest_file)
+            
+            # Timestamp'i datetime'a çevir
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            
+            # Tarih filtreleme
+            if start_date:
+                start_date = pd.to_datetime(start_date)
+                df = df[df['timestamp'] >= start_date]
+            
+            if end_date:
+                end_date = pd.to_datetime(end_date)
+                df = df[df['timestamp'] <= end_date]
+            
+            if df.empty:
+                print(f"⚠️ Tarih aralığında veri bulunamadı: {start_date} - {end_date}")
+                return None
+            
+            print(f"✅ {len(df)} satır veri yüklendi")
+            return df
+            
+        except Exception as e:
+            print(f"❌ Cache yükleme hatası {symbol}: {e}")
+            return None
+    
+    def get_data(self, symbol, start_date=None, end_date=None, source='cache'):
+        """Ana veri yükleme fonksiyonu"""
+        if source == 'cache':
+            return self.load_from_cache(symbol, start_date, end_date)
+        elif source == 'api':
+            # Mevcut API yükleme fonksiyonları
+            if '/' in symbol:  # Kripto
+                return self.load_crypto_data(symbol, start_date, end_date)
+            else:  # Hisse senedi
+                return self.load_stock_data(symbol, start_date, end_date)
+        else:
+            # Önce cache'i dene, sonra API'yi
+            data = self.load_from_cache(symbol, start_date, end_date)
+            if data is None:
+                print(f"🔄 Cache'de bulunamadı, API'den çekiliyor: {symbol}")
+                if '/' in symbol:
+                    data = self.load_crypto_data(symbol, start_date, end_date)
+                else:
+                    data = self.load_stock_data(symbol, start_date, end_date)
+            return data 
