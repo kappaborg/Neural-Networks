@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""
-YOLO INTEGRATED TRADING SYSTEM
-Advanced trading system combining YOLO symbol detection with cache data analysis
-
-Pipeline:
-1. YOLO → Detect symbol with bounding box
-2. Symbol → Load corresponding cache data
-3. Chart Pattern + Historical Data → AI Prediction
-4. Real-time visualization with high accuracy
-"""
-
 import cv2
 import numpy as np
 import pandas as pd
